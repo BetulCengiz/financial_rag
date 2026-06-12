@@ -155,7 +155,10 @@ curl http://localhost:8080/health
 
 ```bash
 # 5 ticker için tam veri çekimi ve ChromaDB'ye yükleme
-python scripts/ingest.py --tickers THYAO GARAN ASELS AKBNK EREGL
+python scripts/ingest.py  # 16 ticker varsayılan
+
+# Belirli ticker'lar
+python scripts/ingest.py --tickers THYAO GARAN ASELS
 
 # Sadece KAP bildirimleri (PDF dahil değil)
 python scripts/ingest.py --tickers THYAO --no-pdf
@@ -178,10 +181,12 @@ python scripts/ingest.py --tickers THYAO GARAN --skip-scrape
 
 ```bash
 curl http://localhost:8080/stats
-# {"total_documents":398,"collection":"kap_docs"}
+# {"total_documents":732,"collection":"kap_docs"}
 ```
 
-Mevcut veri: **5 ticker × ~80 belge = 398 chunk** (THYAO, GARAN, ASELS, AKBNK, EREGL)
+Mevcut veri: **16 ticker × ~46 belge = 732 chunk**
+
+Desteklenen ticker'lar: THYAO, GARAN, ASELS, AKBNK, EREGL, SISE, BIMAS, KCHOL, FROTO, PETKM, TOASO, ENKAI, TUPRS, MGROS, ARCLK, ISCTR
 
 ---
 
@@ -239,7 +244,7 @@ curl -X POST http://localhost:8080/query \
 | Alan | Tip | Varsayılan | Açıklama |
 |------|-----|-----------|----------|
 | `question` | string | zorunlu | Doğal dil sorusu |
-| `ticker` | string | null | Filtre: `THYAO`, `GARAN`, `ASELS`, `AKBNK`, `EREGL` |
+| `ticker` | string | null | Filtre: `THYAO`, `GARAN`, `ASELS`, `AKBNK`, `EREGL`, `SISE`, `BIMAS`, `KCHOL`, `FROTO`, `PETKM`, `TOASO`, `ENKAI`, `TUPRS`, `MGROS`, `ARCLK`, `ISCTR` |
 | `top_k` | int | 3 | Döndürülecek kaynak sayısı |
 | `llm_provider` | string | null | `ollama` veya `claude` (`.env`'i geçersiz kılar) |
 
@@ -441,7 +446,7 @@ Sistem başlatıldıktan sonra doğrulanan işlevler:
 | Test | Sonuç | Gecikme |
 |------|-------|---------|
 | `GET /health` | `{"status":"ok","chroma":true,"ollama":true}` | < 1s |
-| `GET /stats` | `{"total_documents":398}` | < 1s |
+| `GET /stats` | `{"total_documents":732}` | < 1s |
 | THYAO yolcu sorusu | Kaynaklı yanıt döndü | ~21s |
 | AKBNK yatırım tavsiyesi | Anında reddedildi | ~0s |
 | GARAN finansal sonuç | Kaynaklı yanıt döndü | ~20s |
@@ -451,15 +456,26 @@ Sistem başlatıldıktan sonra doğrulanan işlevler:
 ### Ingestion İstatistikleri
 
 ```
-Ticker    KAP Bildirimi    yfinance    Toplam Chunk
-───────   ─────────────    ────────    ────────────
-THYAO          ~25             1            ~80
-GARAN           ~3             1            ~20
-ASELS          ~25             1            ~80
-AKBNK          ~25             1            ~80
-EREGL          ~25             1            ~80
-───────────────────────────────────────────────────
-TOPLAM         ~103            5           398
+Ticker    KAP Bildirimi    yfinance    Chunk
+───────   ─────────────    ────────    ─────
+THYAO          ~25             1        ~46
+GARAN          ~30             1        ~46
+ASELS          ~30             1        ~46
+AKBNK          ~30             1        ~46
+EREGL          ~30             1        ~46
+SISE           ~30             1        ~46
+BIMAS          ~30             1        ~46
+KCHOL          ~30             1        ~46
+FROTO          ~30             1        ~46
+PETKM          ~30             1        ~46
+TOASO          ~30             1        ~46
+ENKAI          ~30             1        ~46
+TUPRS          ~30             1        ~46
+MGROS          ~30             1        ~46
+ARCLK          ~30             1        ~46
+ISCTR           ~4             1        ~16
+───────────────────────────────────────────
+TOPLAM         ~469            16       732
 ```
 
 ---
@@ -479,7 +495,7 @@ Sonuçlar: `evaluation/results.json`
 | `multi_doc` | 20 | Trend/karşılaştırma — birden fazla belge gerektirir |
 | `edge_case` | 10 | Yatırım tavsiyesi — reddedilmeli (`should_reject: true`) |
 
-### Gerçek Sonuçlar (40 soru, llama3.2:3b, CPU)
+### Gerçek Sonuçlar (40 soru, llama3.2:3b, CPU, 16 ticker)
 
 ```json
 {
@@ -488,11 +504,11 @@ Sonuçlar: `evaluation/results.json`
   "rejection_rate": 1.0,
   "n_samples": 40,
   "answer_non_empty_rate": 1.0,
-  "known_ticker_source_rate": 0.525,
+  "known_ticker_source_rate": 1.0,
   "ticker_precision": 1.0,
-  "avg_sources": 1.57,
-  "avg_latency_ms": 26045.2,
-  "p95_latency_ms": 64937.1
+  "avg_sources": 3.0,
+  "avg_latency_ms": 30795.0,
+  "p95_latency_ms": 85327.7
 }
 ```
 
@@ -501,12 +517,10 @@ Sonuçlar: `evaluation/results.json`
 | `rejection_rate` | **%100** | 10/10 yatırım tavsiyesi sorusu reddedildi |
 | `answer_non_empty_rate` | **%100** | 40/40 soru yanıt aldı |
 | `ticker_precision` | **%100** | Ticker filtresi kullanıldığında kaynaklar hep doğru ticker'dan |
-| `known_ticker_source_rate` | **%52.5** | Ingestion'daki 5 ticker dışı sorularda kaynak bulunamadı |
-| `avg_sources` | **1.57** | Ortalama kaynak sayısı (max 3) |
-| `avg_latency_ms` | **26s** | CPU'da llama3.2:3b ile ortalama yanıt süresi |
-| `p95_latency_ms` | **65s** | %95 yanıt bu süre içinde geldi |
-
-> **Not:** `known_ticker_source_rate` %52.5 çünkü test dataset'inde SISE, BIMAS, KCHOL, FROTO, PETKM gibi ticker'lar var — bunlar ingestion'a dahil edilmedi (sadece THYAO, GARAN, ASELS, AKBNK, EREGL yüklendi). Bu ticker'lar eklendikçe oran %100'e yaklaşır.
+| `known_ticker_source_rate` | **%100** | 40/40 sorguda kaynak bulundu (16 ticker tam kapsama) |
+| `avg_sources` | **3.0** | Her sorgu maksimum 3 kaynak döndürdü |
+| `avg_latency_ms` | **31s** | CPU'da llama3.2:3b ile ortalama yanıt süresi |
+| `p95_latency_ms` | **85s** | %95 yanıt bu süre içinde geldi |
 
 ### Görsel Rapor
 
