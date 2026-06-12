@@ -2,8 +2,6 @@
 
 **KAP (Kamuyu Aydınlatma Platformu) bildirimleri ve BIST finansal verilerini doğal dil ile sorgulayan enterprise RAG sistemi.**
 
-Akbank AI/ML Engineer portfolio projesi — Haziran 2026.
-
 ---
 
 ## İçindekiler
