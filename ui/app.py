@@ -25,23 +25,36 @@ TICKER_SECTORS = {
 
 CSS = """
 /* ── Reset & Base ── */
+html, body {
+    background: #0b1120 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+}
 .gradio-container {
-    max-width: 1100px !important;
-    margin: 0 auto !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
     background: #0b1120 !important;
     font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif !important;
     padding: 0 !important;
+    min-height: 100vh !important;
 }
-body, .dark { background: #0b1120 !important; }
+.dark, .dark body { background: #0b1120 !important; }
 footer { display: none !important; }
 .svelte-1ipelgc { display: none !important; }
+/* Gradio inner wrapper padding */
+.gap, .contain { padding: 0 !important; }
+.wrap.svelte-z7cif4, .wrap.svelte-1occ011 { padding: 0 !important; }
 
 /* ── Header ── */
 #kap-header {
     background: linear-gradient(135deg, #0d1b35 0%, #0f2545 100%);
     border-bottom: 1px solid #1e3a5f;
-    padding: 20px 28px;
+    padding: 20px 40px;
     margin-bottom: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
 }
 #kap-logo { font-size: 22px; font-weight: 800; color: #60b8f5; letter-spacing: -0.5px; }
 #kap-logo b { color: #ffffff; }
@@ -63,8 +76,10 @@ footer { display: none !important; }
 #status-bar {
     background: #091020;
     border-bottom: 1px solid #162840;
-    padding: 8px 28px;
+    padding: 8px 40px;
     display: flex; align-items: center; gap: 0;
+    width: 100% !important;
+    box-sizing: border-box !important;
 }
 .stat-item {
     display: flex; align-items: center; gap: 6px;
@@ -81,8 +96,13 @@ footer { display: none !important; }
 /* ── Main layout ── */
 #main-panel {
     background: #0b1120;
-    padding: 20px 28px;
+    padding: 20px 40px;
+    width: 100% !important;
+    box-sizing: border-box !important;
 }
+/* Gradio row/column full width */
+.gr-row, .gr-column { width: 100% !important; }
+.block { background: #0b1120 !important; border: none !important; }
 
 /* ── Section labels ── */
 .field-label {
@@ -354,14 +374,14 @@ HEADER_HTML = """
 </div>"""
 
 EXAMPLE_QUESTIONS = [
-    ["THYAO 2024 yılında kaç yolcu taşıdı?", "THYAO"],
-    ["GARAN son çeyrekte net faiz marjı nedir?", "GARAN"],
-    ["ASELS savunma sanayi ihracatı artış gösteriyor mu?", "ASELS"],
+    ["THYAO son bildirimdeki önemli gelişmeleri özetle", "THYAO"],
+    ["GARAN son çeyrekte net faiz geliri ne kadar?", "GARAN"],
+    ["ASELS savunma ihracatı son dönemde nasıl?", "ASELS"],
     ["AKBNK sermaye yeterlilik oranı nedir?", "AKBNK"],
     ["EREGL son dönem FAVÖK marjı nedir?", "EREGL"],
-    ["SISE cam segmenti cirosu kaç TL?", "SISE"],
-    ["BIMAS mağaza sayısı 2024 sonunda kaç?", "BIMAS"],
-    ["TUPRS son çeyrek rafineri marjı ne kadar?", "TUPRS"],
+    ["SISE son bildirimdeki finansal sonuçlar neler?", "SISE"],
+    ["BIMAS son çeyrekte ciro büyümesi ne kadar?", "BIMAS"],
+    ["TUPRS son dönem rafineri marjı ne kadar?", "TUPRS"],
 ]
 
 with gr.Blocks(title="KAP-RAG | Financial Intelligence") as demo:
