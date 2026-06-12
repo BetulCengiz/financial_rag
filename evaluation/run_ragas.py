@@ -13,7 +13,11 @@ API_BASE = "http://localhost:8080"
 DATASET_PATH = Path(__file__).parent / "test_dataset.json"
 RESULTS_PATH = Path(__file__).parent / "results.json"
 
-KNOWN_TICKERS = {"THYAO", "GARAN", "ASELS", "AKBNK", "EREGL"}
+KNOWN_TICKERS = {
+    "THYAO", "GARAN", "ASELS", "AKBNK", "EREGL",
+    "SISE", "BIMAS", "KCHOL", "FROTO", "PETKM",
+    "TOASO", "ENKAI", "TUPRS", "MGROS", "ARCLK", "ISCTR",
+}
 
 
 def load_dataset() -> list[dict]:

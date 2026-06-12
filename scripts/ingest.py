@@ -16,7 +16,11 @@ except ImportError:
 
 from src.ingestion.pipeline import run_pipeline
 
-DEFAULT_TICKERS = ["THYAO", "GARAN", "ASELS", "AKBNK", "EREGL"]
+DEFAULT_TICKERS = [
+    "THYAO", "GARAN", "ASELS", "AKBNK", "EREGL",
+    "SISE", "BIMAS", "KCHOL", "FROTO", "PETKM",
+    "TOASO", "ENKAI", "TUPRS", "MGROS", "ARCLK", "ISCTR",
+]
 
 
 def main() -> None:
