@@ -73,11 +73,7 @@ EXAMPLE_QUESTIONS = [
     ["EREGL son bildirimdeki onemli gelismeleri ozet", "EREGL"],
 ]
 
-with gr.Blocks(
-    title="KAP-RAG | Turk Finansal Belge Analiz Sistemi",
-    theme=gr.themes.Soft(primary_hue="blue"),
-    css=".gradio-container {max-width: 900px !important; margin: auto}",
-) as demo:
+with gr.Blocks(title="KAP-RAG | Turk Finansal Belge Analiz Sistemi") as demo:
     gr.Markdown(
         """
 # KAP-RAG Enterprise Document Intelligence
@@ -150,4 +146,6 @@ if __name__ == "__main__":
         auth=[(GRADIO_USERNAME, GRADIO_PASSWORD)],
         auth_message="KAP-RAG Demo — Kullanici adi ve sifre girin",
         share=False,
+        theme=gr.themes.Soft(primary_hue="blue"),
+        css=".gradio-container {max-width: 900px !important; margin: auto}",
     )
