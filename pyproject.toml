@@ -1,0 +1,74 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "kap-rag"
+version = "1.0.0"
+description = "KAP-RAG: Enterprise Document Intelligence for Turkish Financial Disclosures"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    # Ingestion
+    "pdfplumber>=0.11",
+    "httpx>=0.27",
+    "tenacity>=8.2",
+    "loguru>=0.7",
+    "yfinance>=0.2",
+    "kap-client>=1.1",
+    # RAG Framework
+    "llama-index-core>=0.10",
+    "llama-index-embeddings-huggingface>=0.2",
+    # Embeddings & Retrieval
+    "sentence-transformers>=3.0",
+    "rank-bm25>=0.2",
+    "chromadb>=0.6",
+    # Generation
+    "anthropic>=0.30",
+    # API
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.30",
+    "pydantic>=2.0",
+    # UI
+    "gradio>=4.0",
+    # Evaluation
+    "ragas>=0.1",
+    "datasets>=2.20",
+    # Utilities
+    "python-dotenv>=1.0",
+    "torch>=2.0",
+    "transformers>=4.40",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.4",
+    "mypy>=1.10",
+    "httpx>=0.27",
+]
+eval = [
+    "jupyter>=1.0",
+    "matplotlib>=3.8",
+    "pandas>=2.0",
+    "seaborn>=0.13",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["data/", "*.ipynb"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+warn_return_any = false

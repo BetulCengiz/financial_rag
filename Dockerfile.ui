@@ -1,0 +1,17 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && apt-get clean
+
+RUN pip install --no-cache-dir "gradio>=4.0" "httpx>=0.27" "python-dotenv>=1.0"
+
+COPY ui/ ./ui/
+
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+EXPOSE 7860
+
+CMD ["python", "ui/app.py"]
