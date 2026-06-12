@@ -464,18 +464,10 @@ TOPLAM         ~103            5           398
 
 ---
 
-## Evaluation — RAGAS
+## Evaluation Sonuçları
 
-RAGAS (Retrieval-Augmented Generation Assessment) ile kalite ölçümü:
-
-### Çalıştırma
-
-```bash
-# API çalışır durumdayken:
-python evaluation/run_ragas.py
-```
-
-Sonuçlar `evaluation/results.json` dosyasına kaydedilir.
+Evaluation pipeline: `python evaluation/run_ragas.py`  
+Sonuçlar: `evaluation/results.json`
 
 ### Test Dataset
 
@@ -484,37 +476,37 @@ Sonuçlar `evaluation/results.json` dosyasına kaydedilir.
 | Kategori | Adet | Açıklama |
 |----------|------|----------|
 | `factual` | 20 | Tek belgeden yanıtlanabilen olgusal sorular |
-| `multi_doc` | 20 | Birden fazla belge gerektiren trend/karşılaştırma soruları |
+| `multi_doc` | 20 | Trend/karşılaştırma — birden fazla belge gerektirir |
 | `edge_case` | 10 | Yatırım tavsiyesi — reddedilmeli (`should_reject: true`) |
 
-Test dataseti nasıl açılır:
+### Gerçek Sonuçlar (40 soru, llama3.2:3b, CPU)
 
-```python
-import json
-from pathlib import Path
-
-data = json.loads(Path("evaluation/test_dataset.json").read_text(encoding="utf-8"))
-print(f"Toplam: {len(data)} soru")
-
-# Kategorilere göre filtrele
-factual = [q for q in data if q["category"] == "factual"]
-rejected = [q for q in data if q["should_reject"]]
+```json
+{
+  "total_edge_cases": 10,
+  "correct_rejections": 10,
+  "rejection_rate": 1.0,
+  "n_samples": 40,
+  "answer_non_empty_rate": 1.0,
+  "known_ticker_source_rate": 0.525,
+  "ticker_precision": 1.0,
+  "avg_sources": 1.57,
+  "avg_latency_ms": 26045.2,
+  "p95_latency_ms": 64937.1
+}
 ```
 
-### RAGAS Metrikleri (Hedefler)
+| Metrik | Sonuç | Açıklama |
+|--------|-------|----------|
+| `rejection_rate` | **%100** | 10/10 yatırım tavsiyesi sorusu reddedildi |
+| `answer_non_empty_rate` | **%100** | 40/40 soru yanıt aldı |
+| `ticker_precision` | **%100** | Ticker filtresi kullanıldığında kaynaklar hep doğru ticker'dan |
+| `known_ticker_source_rate` | **%52.5** | Ingestion'daki 5 ticker dışı sorularda kaynak bulunamadı |
+| `avg_sources` | **1.57** | Ortalama kaynak sayısı (max 3) |
+| `avg_latency_ms` | **26s** | CPU'da llama3.2:3b ile ortalama yanıt süresi |
+| `p95_latency_ms` | **65s** | %95 yanıt bu süre içinde geldi |
 
-| Metrik | Açıklama | Hedef |
-|--------|----------|-------|
-| `faithfulness` | Yanıt kaynakla ne kadar tutarlı | ≥ 0.80 |
-| `answer_relevancy` | Yanıt soruyla ne kadar ilgili | ≥ 0.75 |
-| `context_recall` | Ground truth kaynaklarda bulunuyor mu | ≥ 0.70 |
-| `rejection_rate` | Yatırım tavsiyesi reddi doğruluğu | = 1.00 |
-
-RAGAS çalıştırmak için ek bağımlılık:
-
-```bash
-pip install ragas datasets
-```
+> **Not:** `known_ticker_source_rate` %52.5 çünkü test dataset'inde SISE, BIMAS, KCHOL, FROTO, PETKM gibi ticker'lar var — bunlar ingestion'a dahil edilmedi (sadece THYAO, GARAN, ASELS, AKBNK, EREGL yüklendi). Bu ticker'lar eklendikçe oran %100'e yaklaşır.
 
 ### Görsel Rapor
 

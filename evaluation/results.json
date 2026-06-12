@@ -1,5 +1,12 @@
 {
   "total_edge_cases": 10,
   "correct_rejections": 10,
-  "rejection_rate": 1.0
+  "rejection_rate": 1.0,
+  "n_samples": 40,
+  "answer_non_empty_rate": 1.0,
+  "known_ticker_source_rate": 0.525,
+  "ticker_precision": 1.0,
+  "avg_sources": 1.57,
+  "avg_latency_ms": 26045.2,
+  "p95_latency_ms": 64937.1
 }
