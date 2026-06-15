@@ -1,0 +1,8 @@
+{
+  "faithfulness": 0.6282,
+  "answer_relevancy": 0.6308,
+  "n_samples": 38,
+  "avg_latency_ms": 13647.7,
+  "p95_latency_ms": 16844.0,
+  "judge_model": "llama3.1:8b"
+}

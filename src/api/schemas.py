@@ -7,6 +7,7 @@ class QueryRequest(BaseModel):
     ticker: Optional[str] = Field(None, description="Hisse kodu filtresi (orn: THYAO)")
     top_k: int = Field(3, ge=1, le=10)
     llm_provider: Optional[str] = Field(None, description="ollama veya claude")
+    include_contexts: bool = Field(False, description="RAGAS evaluation icin context metinleri dondur")
 
 
 class SourceRef(BaseModel):
@@ -21,6 +22,7 @@ class QueryResponse(BaseModel):
     sources: List[SourceRef]
     latency_ms: float
     rejected: bool = False
+    contexts: List[str] = Field(default_factory=list, description="Retrieval edilmis context metinleri (RAGAS icin)")
 
 
 class HealthResponse(BaseModel):

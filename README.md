@@ -14,7 +14,7 @@
 6. [Gradio Arayüzü](#gradio-arayüzü)
 7. [Ortam Değişkenleri](#ortam-değişkenleri)
 8. [Test Sonuçları](#test-sonuçları)
-9. [Evaluation — RAGAS](#evaluation--ragas)
+9. [Evaluation Sonuçları](#evaluation-sonuçları)
 10. [Proje Yapısı](#proje-yapısı)
 11. [Teknik Notlar](#teknik-notlar)
 
@@ -73,9 +73,9 @@ cp .env.example .env
 # 3. Tüm servisleri başlat
 docker compose up -d
 
-# 4. Veri yükle (ilk kurulum ~5-10 dakika)
+# 4. Veri yükle (ilk kurulum ~20-30 dakika, 16 ticker)
 pip install -e ".[dev]"
-python scripts/ingest.py --tickers THYAO GARAN ASELS AKBNK EREGL
+python scripts/ingest.py
 
 # 5. Arayüz aç
 # http://localhost:7860  (kullanıcı: demo / şifre: kap2026)
@@ -152,8 +152,8 @@ curl http://localhost:8080/health
 ### Tam Ingestion Pipeline
 
 ```bash
-# 5 ticker için tam veri çekimi ve ChromaDB'ye yükleme
-python scripts/ingest.py  # 16 ticker varsayılan
+# 16 ticker için tam veri çekimi ve ChromaDB'ye yükleme (varsayılan)
+python scripts/ingest.py
 
 # Belirli ticker'lar
 python scripts/ingest.py --tickers THYAO GARAN ASELS
@@ -179,10 +179,10 @@ python scripts/ingest.py --tickers THYAO GARAN --skip-scrape
 
 ```bash
 curl http://localhost:8080/stats
-# {"total_documents":732,"collection":"kap_docs"}
+# {"total_documents":1361,"collection":"kap_docs"}
 ```
 
-Mevcut veri: **16 ticker × ~46 belge = 732 chunk**
+Mevcut veri: **16 ticker × ortalama ~85 belge = 1361 chunk**
 
 Desteklenen ticker'lar: THYAO, GARAN, ASELS, AKBNK, EREGL, SISE, BIMAS, KCHOL, FROTO, PETKM, TOASO, ENKAI, TUPRS, MGROS, ARCLK, ISCTR
 
@@ -219,7 +219,7 @@ curl http://localhost:8080/stats
 ```
 
 ```json
-{"total_documents": 398, "collection": "kap_docs"}
+{"total_documents": 1361, "collection": "kap_docs"}
 ```
 
 #### `POST /query`
@@ -316,7 +316,7 @@ Tarayıcıda açın: **http://localhost:7860**
 ### Özellikler
 
 - Doğal dil sohbet arayüzü
-- Ticker filtresi (THYAO, GARAN, ASELS, AKBNK, EREGL)
+- Ticker filtresi (16 BIST şirketi: THYAO, GARAN, ASELS, AKBNK, EREGL, SISE, BIMAS, KCHOL, FROTO, PETKM, TOASO, ENKAI, TUPRS, MGROS, ARCLK, ISCTR)
 - LLM seçici (Ollama / Claude)
 - Top-K kaydırıcısı (1-10 kaynak)
 - Kaynak gösterimi (tarih + bildirim türü)
@@ -444,87 +444,90 @@ Sistem başlatıldıktan sonra doğrulanan işlevler:
 | Test | Sonuç | Gecikme |
 |------|-------|---------|
 | `GET /health` | `{"status":"ok","chroma":true,"ollama":true}` | < 1s |
-| `GET /stats` | `{"total_documents":732}` | < 1s |
-| THYAO yolcu sorusu | Kaynaklı yanıt döndü | ~21s |
+| `GET /stats` | `{"total_documents":1361}` | < 1s |
+| THYAO yolcu sorusu | Kaynaklı yanıt döndü | ~14s |
 | AKBNK yatırım tavsiyesi | Anında reddedildi | ~0s |
-| GARAN finansal sonuç | Kaynaklı yanıt döndü | ~20s |
+| GARAN finansal sonuç | Kaynaklı yanıt döndü | ~14s |
 
-> **Not:** İlk sorgu ~40-60 saniye sürer (embedding + reranker modelleri belleğe yüklenir). Sonraki sorgular ~20 saniye.
+> **Not:** İlk sorgu ~40-60 saniye sürer (embedding + reranker modelleri belleğe yüklenir). Sonraki sorgular ~14 saniye (CPU, llama3.2:3b).
 
 ### Ingestion İstatistikleri
 
+Son ingestion (2026-06-15): **1361 chunk, 16 ticker**
+
 ```
-Ticker    KAP Bildirimi    yfinance    Chunk
-───────   ─────────────    ────────    ─────
-THYAO          ~25             1        ~46
-GARAN          ~30             1        ~46
-ASELS          ~30             1        ~46
-AKBNK          ~30             1        ~46
-EREGL          ~30             1        ~46
-SISE           ~30             1        ~46
-BIMAS          ~30             1        ~46
-KCHOL          ~30             1        ~46
-FROTO          ~30             1        ~46
-PETKM          ~30             1        ~46
-TOASO          ~30             1        ~46
-ENKAI          ~30             1        ~46
-TUPRS          ~30             1        ~46
-MGROS          ~30             1        ~46
-ARCLK          ~30             1        ~46
-ISCTR           ~4             1        ~16
-───────────────────────────────────────────
-TOPLAM         ~469            16       732
+Ticker    KAP Bildirimi    yfinance tablolar    Chunk
+───────   ─────────────    ─────────────────    ─────
+THYAO           96                7              ~103
+GARAN            4                7               ~11
+ASELS           98                7              ~105
+...diğer 13 ticker...
+───────────────────────────────────────────────────
+TOPLAM        ~1249               112            1361
 ```
 
 ---
 
 ## Evaluation Sonuçları
 
-Evaluation pipeline: `python evaluation/run_ragas.py`  
-Sonuçlar: `evaluation/results.json`
-
 ### Test Dataset
 
-`evaluation/test_dataset.json` — **50 soru-cevap çifti:**
+`evaluation/test_dataset.json` — **40 soru:**
 
 | Kategori | Adet | Açıklama |
 |----------|------|----------|
 | `factual` | 20 | Tek belgeden yanıtlanabilen olgusal sorular |
-| `multi_doc` | 20 | Trend/karşılaştırma — birden fazla belge gerektirir |
+| `multi_doc` | 10 | Trend/karşılaştırma — birden fazla belge gerektirir |
 | `edge_case` | 10 | Yatırım tavsiyesi — reddedilmeli (`should_reject: true`) |
 
-### Gerçek Sonuçlar (40 soru, llama3.2:3b, CPU, 16 ticker)
+### Guardrail + Kaynak Metrikleri (16 ticker)
 
 ```json
 {
-  "total_edge_cases": 10,
-  "correct_rejections": 10,
   "rejection_rate": 1.0,
-  "n_samples": 40,
-  "answer_non_empty_rate": 1.0,
   "known_ticker_source_rate": 1.0,
   "ticker_precision": 1.0,
-  "avg_sources": 3.0,
-  "avg_latency_ms": 30795.0,
-  "p95_latency_ms": 85327.7
+  "avg_latency_ms": 30795.0
 }
 ```
 
 | Metrik | Sonuç | Açıklama |
 |--------|-------|----------|
 | `rejection_rate` | **%100** | 10/10 yatırım tavsiyesi sorusu reddedildi |
-| `answer_non_empty_rate` | **%100** | 40/40 soru yanıt aldı |
 | `ticker_precision` | **%100** | Ticker filtresi kullanıldığında kaynaklar hep doğru ticker'dan |
-| `known_ticker_source_rate` | **%100** | 40/40 sorguda kaynak bulundu (16 ticker tam kapsama) |
-| `avg_sources` | **3.0** | Her sorgu maksimum 3 kaynak döndürdü |
-| `avg_latency_ms` | **31s** | CPU'da llama3.2:3b ile ortalama yanıt süresi |
-| `p95_latency_ms` | **85s** | %95 yanıt bu süre içinde geldi |
+| `known_ticker_source_rate` | **%100** | Tüm sorgularda kaynak bulundu (16 ticker tam kapsama) |
 
-### Görsel Rapor
+### LLM-Judge Evaluation (faithfulness & answer relevancy)
+
+Evaluation scripti: `python evaluation/run_ragas_llm.py`  
+Judge model: `llama3.1:8b` (Ollama — ragas/langchain bağımlılığı yok, saf httpx)  
+Sonuçlar: `evaluation/results_ragas.json`
+
+Judge modeli ilk kullanımda yükleyin:
 
 ```bash
-jupyter notebook evaluation/report.ipynb
+docker exec kap-ollama ollama pull llama3.1:8b
 ```
+
+```json
+{
+  "faithfulness": 0.6282,
+  "answer_relevancy": 0.6308,
+  "n_samples": 38,
+  "avg_latency_ms": 13647.7,
+  "p95_latency_ms": 16844.0,
+  "judge_model": "llama3.1:8b"
+}
+```
+
+| Metrik | Sonuç | Açıklama |
+|--------|-------|----------|
+| `faithfulness` | **0.63** | Cevaplardaki ifadelerin kaynaklara dayanma oranı |
+| `answer_relevancy` | **0.63** | Cevabın soruyla ilgililik skoru |
+| `avg_latency_ms` | **13.6s** | llama3.2:3b ile ortalama yanıt süresi (CPU) |
+| `p95_latency_ms` | **16.8s** | %95 yanıt bu süre içinde geldi |
+
+Detaylı analiz ve iyileştirme planı: [`evaluation/EVALUATION_REPORT.md`](evaluation/EVALUATION_REPORT.md)
 
 ---
 
@@ -565,9 +568,10 @@ kap-rag/
 │       └── schemas.py          ← Pydantic modeller
 │
 ├── evaluation/
-│   ├── test_dataset.json       ← 50 soru-cevap çifti
-│   ├── run_ragas.py            ← RAGAS değerlendirme pipeline
-│   └── report.ipynb            ← Görsel metrik raporu
+│   ├── test_dataset.json       ← 40 soru-cevap çifti
+│   ├── run_ragas_llm.py        ← LLM-judge evaluation (llama3.1:8b)
+│   ├── results_ragas.json      ← En güncel evaluation sonuçları
+│   └── EVALUATION_REPORT.md   ← Metrik geçmişi + iyileştirme planı
 │
 ├── scripts/
 │   ├── ingest.py               ← Ingestion CLI
@@ -618,7 +622,7 @@ volumes:
 ### Sorun Giderme
 
 **API ilk sorguya cevap vermiyor:**
-İlk sorgu embedding + reranker modellerini belleğe yükler (40-60s). Sonraki sorgular ~20s.
+İlk sorgu embedding + reranker modellerini belleğe yükler (40-60s). Sonraki sorgular ~14s (CPU, llama3.2:3b).
 
 **ChromaDB bağlantı hatası:**
 ```bash

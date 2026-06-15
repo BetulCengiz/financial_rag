@@ -123,10 +123,13 @@ async def query(req: QueryRequest):
             source=meta.get("source"),
         ))
 
+    contexts = [doc["text"] for doc in top_docs] if req.include_contexts else []
+
     return QueryResponse(
         answer=answer,
         sources=sources,
         latency_ms=round((time.monotonic() - t0) * 1000, 1),
+        contexts=contexts,
     )
 
 

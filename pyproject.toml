@@ -32,8 +32,9 @@ dependencies = [
     # UI
     "gradio>=4.0",
     # Evaluation
-    "ragas>=0.1",
+    "ragas>=0.2",
     "datasets>=2.20",
+    "langchain-ollama>=0.2",
     # Utilities
     "python-dotenv>=1.0",
     "torch>=2.0",
@@ -67,6 +68,9 @@ extend-exclude = ["data/", "*.ipynb"]
 [tool.ruff.lint]
 select = ["E", "W", "F", "I"]
 ignore = ["E501"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
 
 [tool.mypy]
 python_version = "3.11"
