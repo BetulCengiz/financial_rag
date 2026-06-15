@@ -1,7 +1,7 @@
 # KAP-RAG Proje Ilerleme Raporu
 
-**Son guncelleme:** 2026-06-12  
-**Durum: TAMAMLANDI ✓**
+**Son guncelleme:** 2026-06-15  
+**Durum: TAMAMLANDI ✓ — LLM-Judge Evaluation eklendi**
 
 ## Tamamlanan Bilesenler
 
@@ -29,13 +29,22 @@
 - [x] `ui/app.py` — Gradio UI (kaynak gosterimi, LLM secimi, tick filtresi)
 
 ### Hafta 4 - Evaluation + Deploy Altyapisi
-- [x] `evaluation/test_dataset.json` — 50 soru-cevap cifti (20 olgusal, 20 cok-belgeli, 10 kenar vaka)
-- [x] `evaluation/run_ragas.py` — RAGAS faithfulness/relevancy/recall pipeline
-- [x] `evaluation/report.ipynb` — gorsel metrik raporu
+- [x] `evaluation/test_dataset.json` — 40 soru-cevap cifti (20 olgusal, 10 cok-belgeli, 10 kenar vaka)
+- [x] `evaluation/run_ragas_llm.py` — LLM-judge evaluation (llama3.1:8b, saf httpx, ragas/langchain bagimliligi yok)
+- [x] `evaluation/results_ragas.json` — guncel sonuclar (faithfulness=0.63, relevancy=0.63)
+- [x] `evaluation/EVALUATION_REPORT.md` — metrik gecmisi, faithfulness=0.0 analizi, iyilestirme yol haritasi
 - [x] `Dockerfile.api` + `Dockerfile.ui` — Docker imajlari
-- [x] `pyproject.toml` — tum bagimliliklar
+- [x] `pyproject.toml` — tum bagimliliklar (ragas>=0.2, langchain-ollama eklendi)
 - [x] `.env.example` — API key sablonu
 - [x] `.github/workflows/ci.yml` — GitHub Actions CI (lint + test)
+
+### Hafta 5 - Ticker Genisletme + API Gelistirme (2026-06-12 → 2026-06-15)
+- [x] `scripts/ingest.py` — DEFAULT_TICKERS 5 → 16 ticker
+- [x] `src/generation/prompt_builder.py` — YALNIZCA Turkce kural (dil karisikligini onlemek icin)
+- [x] `src/api/schemas.py` — `include_contexts` alani eklendi (evaluation pipeline icin)
+- [x] `src/api/main.py` — `contexts` field QueryResponse'a eklendi
+- [x] `docker-compose.yml` — Ollama GPU reservation + HuggingFace cache volume mount
+- [x] ChromaDB: 398 → 732 → **1361 chunk** (16 ticker, 2026-06-15 ingestion)
 
 ### Test Altyapisi
 - [x] `tests/test_kap_scraper.py` — 5 birim test (KAP scraper mock)
@@ -78,9 +87,10 @@ kap-rag/
 |       +-- schemas.py
 |
 +-- evaluation/
-|   +-- test_dataset.json       <- 50 soru-cevap cifti
-|   +-- run_ragas.py
-|   +-- report.ipynb
+|   +-- test_dataset.json       <- 40 soru-cevap cifti
+|   +-- run_ragas_llm.py        <- LLM-judge evaluation (llama3.1:8b)
+|   +-- results_ragas.json      <- Guncel sonuclar
+|   +-- EVALUATION_REPORT.md   <- Metrik gecmisi + iyilestirme plani
 |
 +-- scripts/
 |   +-- ingest.py               <- Pipeline CLI
@@ -97,37 +107,51 @@ kap-rag/
 
 ---
 
-## Sistem Durumu (2026-06-12)
+## Sistem Durumu (2026-06-15) — GUNCEL
 
-| Servis       | Durum   | URL                          |
-|--------------|---------|------------------------------|
-| ChromaDB     | Calisiyor | http://localhost:8000       |
-| Ollama       | Calisiyor | http://localhost:11434      |
-| FastAPI      | Calisiyor | http://localhost:8080       |
-| Gradio UI    | Calisiyor | http://localhost:7860       |
+| Servis       | Durum     | URL                     |
+|--------------|-----------|-------------------------|
+| ChromaDB     | Calisiyor | http://localhost:8000   |
+| Ollama       | Calisiyor | http://localhost:11434  |
+| FastAPI      | Calisiyor | http://localhost:8080   |
+| Gradio UI    | Calisiyor | http://localhost:7860   |
 
-- **ChromaDB:** 398 chunk (5 ticker: THYAO, GARAN, ASELS, AKBNK, EREGL)
-- **LLM:** llama3.2:3b (Ollama, local)
+- **ChromaDB:** 1361 chunk (16 ticker)
+- **LLM (generation):** llama3.2:3b (Ollama, local)
+- **LLM (judge):** llama3.1:8b (Ollama, evaluation icin)
 - **Embedding:** intfloat/multilingual-e5-large (HF cache mount ile)
+
+### Evaluation Sonuclari (2026-06-15)
+
+| Metrik | Deger | Notlar |
+|--------|-------|--------|
+| rejection_rate | 1.0 (%100) | 10/10 yatirim tavsiyesi reddedildi |
+| known_ticker_source_rate | 1.0 (%100) | 16 ticker tam kapsama |
+| faithfulness | 0.628 | llama3.1:8b judge, 38/40 ornek |
+| answer_relevancy | 0.631 | llama3.1:8b judge |
+| avg_latency_ms | 13647 (~14s) | CPU, llama3.2:3b |
 
 ### Dogrulanmis Testler
 - `/health` -> `{"status":"ok","chroma":true,"ollama":true}`
-- `/stats` -> `{"total_documents":398,"collection":"kap_docs"}`
-- `/query` THYAO yolcu sorusu -> cevap geldi (~20s latency)
+- `/stats` -> `{"total_documents":1361,"collection":"kap_docs"}`
+- `/query` THYAO sorusu -> cevap geldi (~14s latency)
 - Guardrails: "AKBNK hissesi al tavsiyesi" -> `rejected: true` (aninda)
 
 ### Baslatma
 
 ```bash
 docker compose up -d
-# Ilk sorgu ~40-60s (model yukleme), sonraki sorgular ~20s
+python scripts/ingest.py           # 16 ticker, ~20-30 dakika
+python evaluation/run_ragas_llm.py # judge model: llama3.1:8b
+# Ilk sorgu ~40-60s (model yukleme), sonraki sorgular ~14s
 ```
 
-### Evaluation
+### Bir Sonraki Adimlar (EVALUATION_REPORT.md'de detayli)
 
-```bash
-python evaluation/run_ragas.py
-```
+1. **Faithfulness iyilestirme** — yfinance finansal tablolarini daha granular chunk'lara bolmek
+2. **Guardrails guclendirme** — kaynak disindaki sayisal iddialar icin "bilgi bulunamadi" yaniti
+3. **Prompt kistiklama** — "YALNIZCA kaynak metinlerde gecen sayilari kullan" kurali
+4. **Zaman serisi chunk stratejisi** — multi-year trend sorulari icin quarterly summary chunk'lari
 
 ## KAP API Notlari
 
